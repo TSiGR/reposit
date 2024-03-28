@@ -1,8 +1,5 @@
 #include <iostream>
 
-void make(int value) { std::cout << "int\n"; }
-void make(const char* value) { std::cout << "char* object\n"; }
-
 template<typename Type>
 class MySimpleClass
 {
@@ -41,7 +38,7 @@ class List
 {
     public:
 
-    List(const T* ptr)
+    List(T* ptr)
     {
         Node<T> *temp = new Node<T>;
         temp->value = ptr;
@@ -93,10 +90,6 @@ class List
         return count;
     }
 
-    ~List()
-    {
-
-    }
     List& operator=(const List &another) = delete;
     List(const List &another) = delete;
 
@@ -110,16 +103,38 @@ class Linked_ptr
 {
     public:
 
-    explicit Linked_ptr(T* ptr)
+    explicit Linked_ptr(T* ptr = 0) : m_ptr(ptr), m_list(nullptr)
     {
-        m_ptr = ptr;
-        m_list = new List(m_ptr);
+        if (m_ptr)
+            m_list = new List(m_ptr);
     }
+
     Linked_ptr(const Linked_ptr<T>& another)
     {
         m_ptr = another.m_ptr;
         m_list = another.m_list;
         m_list->add(m_ptr);
+    }
+
+    Linked_ptr& operator=(const Linked_ptr<T>& another)
+    {
+        if (this != &another)
+        {
+            this->~Linked_ptr();
+            this->m_ptr = another.m_ptr;
+            this->m_list = another.m_list;
+            this->m_list->add(this->m_ptr);
+        }
+
+        return *this;
+    }
+
+    void reset(T* ptr)
+    {
+        this->~Linked_ptr();
+        m_ptr = ptr;
+        if (m_ptr)
+            m_list = new List(m_ptr);
     }
 
     const int get_size() const
@@ -143,12 +158,13 @@ class Linked_ptr
 
     ~Linked_ptr() 
     { 
-        m_list->remove();
+        if (m_ptr)
+            m_list->remove();
     }
 
     Linked_ptr(Linked_ptr &&another) = delete;
     Linked_ptr& operator=(Linked_ptr &&another) = delete;
-    Linked_ptr& operator=(const Linked_ptr &another) = delete;
+
     private:
 
     List<T> *m_list;
@@ -157,16 +173,12 @@ class Linked_ptr
 
 int main()
 {
-    make(0);
-    make(nullptr);
-
     const int c = 9;
     int t = 8;
     int const *p = &c;
+    int const *a = &c;
     p = &t;
     std::cout << p << " " << *p << " " << &t << " " << &c << std::endl;
-
-
 
     Linked_ptr<MySimpleClass<int>> ptr_myclass(new MySimpleClass<int>(t));
     std::cout << ptr_myclass->getval() << std::endl;
@@ -183,5 +195,44 @@ int main()
     std::cout << ptr_myclass.get() << std::endl;
     std::cout << ptr_myclass_third.get() << std::endl;
     std::cout << ptr_myclass_fourth.get() << std::endl;
+
+    Linked_ptr<int const> p1;
+    std::cout << p1.operator->() << " " << p1.get() << std::endl;
+    Linked_ptr<int const> p2(p);
+    std::cout << p2.operator->() << " " << p2.get() << std::endl;
+    Linked_ptr<int const> p3(a);
+    std::cout << p3.operator->() << " " << p3.get() << std::endl;
+    Linked_ptr p4(p2);
+    std::cout << p4.operator->() << " " << p4.get() << std::endl;
+    Linked_ptr<int const> p5;
+    std::cout << p5.operator->() << " " << p5.get() << std::endl;
+    p5 = p2;
+    std::cout << p5.operator->() << " " << p5.get() << std::endl;
+    p5 = p4;
+    std::cout << p5.operator->() << " " << p5.get() << std::endl;
+    p1 = p5;
+    std::cout << p1.operator->() << " " << p1.get() << std::endl;
+    p3.reset(nullptr);
+    std::cout << p3.operator->() << " " << p3.get() << std::endl;
+    p3 = p5;
+    std::cout << p3.operator->() << " " << p3.get() << std::endl;
+    p5.reset(nullptr);
+    std::cout << p5.operator->() << " " << p5.get() << std::endl;
+    Linked_ptr<int const> p6;
+    std::cout << p6.operator->() << " " << p6.get() << std::endl;
+    Linked_ptr<MySimpleClass<int>> p7;
+    std::cout << p7.operator->() << " " << p7.get() << std::endl;
+    p7 = p7;
+    std::cout << p7.operator->() << " " << p7.get() << std::endl;
+    p7.reset(nullptr);    
+    std::cout << p7.operator->() << " " << p7.get() << std::endl;
+    p7.reset(new MySimpleClass<int>(25));
+    std::cout << p7.operator->() << " " << p7.get() << std::endl;
+    Linked_ptr<MySimpleClass<int>> p8(new MySimpleClass<int>(15));
+    std::cout << p8.operator->() << " " << p8.get() << std::endl;
+    p8.reset(nullptr);
+    std::cout << p8.operator->() << " " << p8.get() << std::endl;
+    p1 = p1;
+    std::cout << p1.operator->() << " " << p1.get() << std::endl;
     return 0;
 }
